@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test de Personalidad Negociadora</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f7f3fb;margin:0;padding:20px;color:#25202b}
+.app{max-width:700px;margin:auto;background:white;border-radius:22px;padding:24px;box-shadow:0 8px 30px #0001}
+h1{margin-top:0}.muted{color:#6b6570}.question{font-size:20px;font-weight:bold;margin:25px 0 15px}
+.option{display:block;border:1px solid #ddd;border-radius:12px;padding:14px;margin:9px 0;cursor:pointer}
+.option:has(input:checked){background:#eee5fa;border-color:#7b3fb2}
+button{border:0;border-radius:12px;padding:13px 20px;font-weight:bold;cursor:pointer}
+.primary{background:#7b3fb2;color:white}.secondary{background:#eee}
+input[type=text]{width:100%;box-sizing:border-box;padding:14px;border:1px solid #ccc;border-radius:12px;font-size:16px}
+.progress{height:8px;background:#eee;border-radius:10px;margin-top:15px}.bar{height:100%;background:#7b3fb2;border-radius:10px}
+.hidden{display:none}.resultbox{background:#f7effd;border-radius:16px;padding:18px;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>🧠 Test de Personalidad Negociadora</h1>
+<p class="muted">Respondé sinceramente. No hay respuestas buenas o malas.</p>
+
+<section id="start">
+<label><b>Tu nombre</b></label>
+<input id="name" type="text" placeholder="Escribí tu nombre">
+<br><br><button class="primary" onclick="start()">Comenzar test →</button>
+</section>
+
+<section id="quiz" class="hidden">
+<div id="counter"></div><div class="progress"><div id="bar" class="bar"></div></div>
+<div id="q" class="question"></div><div id="opts"></div>
+<p id="error" class="muted hidden">Elegí una respuesta para continuar.</p>
+<button id="prev" class="secondary" onclick="previous()">← Anterior</button>
+<button id="next" class="primary" onclick="next()">Siguiente →</button>
+</section>
+
+<section id="result" class="hidden">
+<div class="resultbox">
+<h2 id="title"></h2><p id="desc"></p>
+<h3>Tus tendencias</h3><div id="scores"></div>
+<h3>💪 Fortaleza</h3><p id="strength"></p>
+<h3>🎯 Desafío</h3><p id="challenge"></p>
+<h3>🤝 Cómo negociás</h3><p id="negotiation"></p>
+</div>
+<br><button class="primary" onclick="location.reload()">↻ Hacer nuevamente</button>
+</section>
+</div>
+
+<script>
+const questions=[
+"Cuando una situación se pone tensa, logro mantener la calma.",
+"Cuando algo sale mal, pienso qué podría haber hecho diferente.",
+"Me gusta planificar y organizarme antes de actuar.",
+"Persevero hasta terminar lo que comienzo.",
+"Creo que mis decisiones influyen mucho en los resultados que obtengo.",
+"Me gusta ganar y conseguir el mejor resultado posible.",
+"Me motiva alcanzar objetivos difíciles.",
+"Me interesa que la otra persona también quede conforme.",
+"Intento comprender qué necesita realmente la otra persona.",
+"Prefiero llegar a un acuerdo antes que generar un conflicto.",
+"Escucho antes de responder.",
+"Puedo adaptar mi forma de comunicarme según la persona que tengo enfrente.",
+"Para tomar una decisión importante, priorizo los datos y argumentos.",
+"Antes de decidir, pienso cómo afectará mi decisión a otras personas.",
+"Puedo separar mis emociones personales de una negociación.",
+"Si mi estrategia no funciona, puedo cambiarla rápidamente.",
+"Puedo adaptarme cuando la otra persona cambia sus condiciones.",
+"Me resulta fácil defender mi posición sin agredir al otro.",
+"Me considero una persona creativa para encontrar soluciones.",
+"Me importa mantener una buena relación después de negociar."
+];
+
+const type=[
+"analitico","analitico","analitico","analitico","adaptativo",
+"competitivo","competitivo","colaborativo","colaborativo","colaborativo",
+"colaborativo","adaptativo","analitico","colaborativo","analitico",
+"adaptativo","adaptativo","competitivo","adaptativo","colaborativo"
+];
+
+const profiles={
+colaborativo:{
+name:"NEGOCIADORA COLABORATIVA",
+desc:"Buscás acuerdos donde las dos partes puedan sentirse escuchadas y valoradas.",
+strength:"Escuchar, comprender necesidades y construir confianza.",
+challenge:"Defender tus intereses sin ceder solamente para evitar conflictos.",
+negotiation:"Buscás el ganar-ganar. Te importa el resultado y también la relación."
+},
+competitivo:{
+name:"NEGOCIADORA COMPETITIVA",
+desc:"Te orientás a los objetivos, resultados y defensa firme de tus intereses.",
+strength:"Determinación para perseguir objetivos y sostener tu posición.",
+challenge:"Evitar que ganar sea más importante que conservar una buena relación.",
+negotiation:"Entrás con una meta clara y buscás obtener el mejor resultado posible."
+},
+analitico:{
+name:"NEGOCIADORA ANALÍTICA",
+desc:"Preferís analizar, ordenar la información y decidir con fundamentos.",
+strength:"Preparación, organización y capacidad para fundamentar decisiones.",
+challenge:"Evitar analizar indefinidamente cuando llega el momento de decidir.",
+negotiation:"Te apoyás en datos, argumentos, planificación y claridad."
+},
+adaptativo:{
+name:"NEGOCIADORA ADAPTATIVA",
+desc:"Tenés facilidad para leer la situación y modificar tu estrategia.",
+strength:"Flexibilidad para adaptarte a diferentes personas y circunstancias.",
+challenge:"Mantener claros tus objetivos mientras te adaptás.",
+negotiation:"Observás al otro y ajustás tu estrategia cuando aparece un obstáculo."
+}
+};
+
+let i=0,answers=[],person="";
+
+function start(){
+ person=document.getElementById("name").value.trim();
+ if(!person){alert("Escribí tu nombre para comenzar.");return}
+ document.getElementById("start").classList.add("hidden");
+ document.getElementById("quiz").classList.remove("hidden");
+ render();
+}
+function render(){
+ document.getElementById("counter").textContent=`Pregunta ${i+1} de ${questions.length}`;
+ document.getElementById("bar").style.width=((i+1)/questions.length*100)+"%";
+ document.getElementById("q").textContent=questions[i];
+ const opts=document.getElementById("opts");opts.innerHTML="";
+ ["Nunca","Casi nunca","A veces","Casi siempre","Siempre"].forEach((x,n)=>{
+  const l=document.createElement("label");l.className="option";
+  l.innerHTML=`<input type="radio" name="ans" value="${n}"> ${x}`;
+  if(answers[i]===n)l.querySelector("input").checked=true;
+  opts.appendChild(l);
+ });
+ document.getElementById("prev").disabled=i===0;
+ document.getElementById("next").textContent=i===questions.length-1?"Ver mi resultado ✨":"Siguiente →";
+ document.getElementById("error").classList.add("hidden");
+}
+function next(){
+ const a=document.querySelector('input[name="ans"]:checked');
+ if(!a){document.getElementById("error").classList.remove("hidden");return}
+ answers[i]=Number(a.value);
+ if(i<questions.length-1){i++;render()}else result();
+}
+function previous(){if(i>0){i--;render()}}
+function result(){
+ const s={colaborativo:0,competitivo:0,analitico:0,adaptativo:0};
+ type.forEach((t,n)=>s[t]+=answers[n]+1);
+ const order=Object.entries(s).sort((a,b)=>b[1]-a[1]);
+ const winner=order[0][0],p=profiles[winner];
+ document.getElementById("quiz").classList.add("hidden");
+ document.getElementById("result").classList.remove("hidden");
+ document.getElementById("title").textContent=`¡${person}! Tu perfil es ${p.name}`;
+ document.getElementById("desc").textContent=p.desc;
+ document.getElementById("strength").textContent=p.strength;
+ document.getElementById("challenge").textContent=p.challenge;
+ document.getElementById("negotiation").textContent=p.negotiation;
+ document.getElementById("scores").innerHTML=order.map(([k,v])=>{
+  const pct=Math.round(v/25*100);
+  return `<p><b>${profiles[k].name.replace("NEGOCIADORA ","")}</b> — ${pct}%</p>
+  <div class="progress"><div class="bar" style="width:${pct}%"></div></div>`;
+ }).join("");
+}
+</script>
+</body>
+</html>
